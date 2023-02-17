@@ -1,8 +1,9 @@
-const Product = require('../models/product_database');
+const Product = require('../models/product_sequelize');
 const Cart = require('../models/Cart_database');
+const user=require('../models/user')
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll().then(([products]) => {
+  Product.findAll().then(products => {
     res.render('shop/product-list', {
       prods: products,
       pageTitle: 'All Products',
@@ -10,18 +11,27 @@ exports.getProducts = (req, res, next) => {
     });
   }).catch(e=>console.log(e))
 };
-exports.getProduct=(req,res,next)=>{
+exports.getDetails=(req,res,next)=>{
   const pid=req.params.productid;
-  Product.findById(pid).then(([product])=>{
+  // Product.findAll({where : {id :pid}}).then((product)=>{
+  //   res.render('shop/product-detail', {
+  //     product: product[0],  //finding first element(ie id) from product 
+  //     pageTitle : product[0].title,
+  //     path:'/products/:pid'
+  //   })
+  // }).catch(e=>console.log(e))
+
+
+  Product.findByPk(pid).then((product)=>{// Pk define finding peimary key ..find by index is not working
     res.render('shop/product-detail', {
-      product: product[0],  //finding first element(ie id) from product 
+      product: product,  //showing error 
       pageTitle : product.title,
-      path:'/products'
+      path:'/products/:pid'
     })
   }).catch(e=>console.log(e))
 }
 exports.getIndex = (req, res, next) => {
-  Product.fetchAll().then(([products]) => {
+  Product.findAll().then(products => {
     res.render('shop/index', {
       prods: products,
       pageTitle: 'Shop',
@@ -30,44 +40,53 @@ exports.getIndex = (req, res, next) => {
   }).catch(e=>console.log(e))
 };
 
-exports.getCart = (req, res, next) => {
- Cart.getCart(item=>{ 
-  let disp=[]
-  Product.fetchAll(pro=>{
-      for(p of pro){
-        const index=item.find(e=>e.id===p.id)
-        if(index){
-         disp.push({pr:p,qty:index.qty})
-        }
-      }
-      res.render('shop/cart', {
+exports.getCart = (req, res, next) => {///////////////////////////////
+  req.user.getCart().then(cart=>{
+    return cart.getProducts()
+  }).then(products=>{
+    res.render('shop/cart', {
         path: '/cart',
-        prods: disp,
-        pageTitle: 'Your Cart' 
-      });
+        prods: products,
+        pageTitle: 'Your Cart'  
+      })
   })
-  
- })
- 
+   
 
-  
 };
-exports.cartPost=(req,res)=>{
+exports.cartPost=(req,res)=>{////////////////////////////
   const proid=req.body.productid;
-  Product.findById(proid,pro=>{
-    // cart.addProduct(proid,pro.price)
-    cart.addProduct1(proid)
-    res.redirect('/cart')
-  })
+
+  let fetchedcart;
+  let qty=1
+  req.user.getCart().then(cart=>{
+    fetchedcart=cart;
+    return cart.getProducts({where:{id:proid}})
+  }).then(products=>{
+    let product;
+    if(products.length>0){
+      product=products[0]
+    }
+    if(product){
+      let q=product.cartItem.quantity;
+      qty=q+1;
+      console.log('qty*********************=',qty)
+      return product
+    }
+    return Product.findByPk(proid) 
+  }).then(product=>{
+    console.log('qty adding to cart*********************=',qty)
+   return fetchedcart.addProducts(product,{through :{quantity:qty}})
+  }).then(()=>res.redirect('/cart') )
+  .catch(e=>console.log(e))
 }
-exports.getOrders = (req, res, next) => {
+exports.getOrders = (req, res, next) => {/////////////////////////
   res.render('shop/orders', {
     path: '/orders',
     pageTitle: 'Your Orders'
   });
 };
 
-exports.getCheckout = (req, res, next) => {
+exports.getCheckout = (req, res, next) => {//////////////////////
   const ch=req.params.total
   res.send(`<h1>${ch}</h1>`)
   // res.render('shop/checkout', {
