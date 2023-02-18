@@ -7,7 +7,7 @@ const musql= sequelize.define('user',{
         allowNull:false,
         primaryKey:true
     },
-    Name:{
+    name:{
         type:Sequelize.STRING,
         allowNull:false 
     },
