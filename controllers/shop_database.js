@@ -1,5 +1,5 @@
 const Product = require('../models/product_sequelize');
-const Cart = require('../models/Cart_database');
+const cartItme = require('../models/cartitem');
 const user=require('../models/user')
 
 exports.getProducts = (req, res, next) => {
@@ -49,36 +49,31 @@ exports.getCart = (req, res, next) => {///////////////////////////////
         prods: products,
         pageTitle: 'Your Cart'  
       })
-  })
    
+  })
+       
 
 };
 exports.cartPost=(req,res)=>{////////////////////////////
   const proid=req.body.productid;
-
-  let fetchedcart;
-  let qty=1
+  let qty=1;
+  let car;
   req.user.getCart().then(cart=>{
-    fetchedcart=cart;
-    return cart.getProducts({where:{id:proid}})
-  }).then(products=>{
-    let product;
-    if(products.length>0){
-      product=products[0]
-    }
-    if(product){
-      let q=product.cartItem.quantity;
-      qty=q+1;
-      console.log('qty*********************=',qty)
-      return product
-    }
-    return Product.findByPk(proid) 
-  }).then(product=>{
-    console.log('qty adding to cart*********************=',qty)
-   return fetchedcart.addProducts(product,{through :{quantity:qty}})
-  }).then(()=>res.redirect('/cart') )
-  .catch(e=>console.log(e))
+    car=cart
+   return cart.getProducts({where :{id:proid}})})
+  .then(product=>{
+   if(product.length>0){
+    qty=product[0].cartItme.quantity+1
+   }
+   return Product.findByPk(proid)
+  })
+  .then(e=>{
+    car.addProduct(e,{through :{quantity:qty}})
+  }).then(g=>res.redirect('/cart'))
+  .catch(e=>console.log('error found in post editing',e))
+  
 }
+
 exports.getOrders = (req, res, next) => {/////////////////////////
   res.render('shop/orders', {
     path: '/orders',
@@ -95,14 +90,11 @@ exports.getCheckout = (req, res, next) => {//////////////////////
   // });
 };
 exports.deleteCart=(req,res)=>{
-
-  const ch=req.body.deleteid
-  fs.readFile(cartPath,'utf8',(err,data)=>{
-    const f=JSON.parse(data)
-    const d=f.filter(e=>e.id!=ch)
-    fs.writeFile(cartPath,JSON.stringify(d),e=>console.log(e))
+  const ch=req.params.deleteid
+ cartItme.destroy({where:{id:ch}}).then(e=>console.log(e))
     res.redirect('/cart')
-  })
- 
-    
+//  req.user.getCart().then(cart=>cart.getProducts({where:{id:ch}})).then(product=>{
+//   console.log(product)
+//  })
+      
 }

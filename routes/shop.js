@@ -15,7 +15,7 @@ router.get('/cart', shopController.getCart);
 router.post('/cart',shopController.cartPost)
   
 router.get('/orders', shopController.getOrders);
-router.post('/cart/delete-product',shopController.deleteCart)
+router.post('/cart/delete-cart/:deleteid',shopController.deleteCart)
 
 router.get('/checkout/:total', shopController.getCheckout);
 

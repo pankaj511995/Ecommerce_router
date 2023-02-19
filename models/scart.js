@@ -6,10 +6,6 @@ const musql= sequelize.define('cart',{
         autoIncrement:true,
         allowNull:false,
         primaryKey:true
-    },
-    quantity :{
-        type:Sequelize.INTEGER
-       
     }
 })
 
